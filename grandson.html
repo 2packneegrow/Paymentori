@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Gateway</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-color: #12121c;
+            --card-bg-color: rgba(45, 30, 25, 0.7); 
+            --item-bg-color: rgba(28, 20, 18, 0.5); 
+            --primary-accent: #b09571;
+            --primary-accent-hover: #9f8665;
+            --primary-accent-glow: rgba(176, 149, 113, 0.4); 
+            --text-color: #ffedd5;         
+            --border-color: rgba(176, 149, 113, 0.5);
+            --success-color: #4ade80; 
+            --danger-red: #ef4444;
+            --notification-bg: #2a2a38;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: url('https://files.catbox.moe/e5a68o.webp');
+            background-size: cover;
+            background-position: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .payment-card {
+            width: 100%; max-width: 400px;
+            background-color: var(--card-bg-color);
+            backdrop-filter: blur(25px) saturate(150%);
+            -webkit-backdrop-filter: blur(25px) saturate(150%);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 24px 28px;
+            display: flex; flex-direction: column; gap: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            animation: fadeInCard 0.8s 0.2s ease-out forwards;
+            opacity: 0; transform: translateY(20px);
+            transition: box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+        .payment-card:hover { border-color: var(--border-color); box-shadow: 0 8px 40px 0 rgba(0, 0, 0, 0.4), 0 0 20px var(--primary-accent-glow); }
+        @keyframes fadeInCard { to { opacity: 1; transform: translateY(0); } }
+
+        .card-header h1 {
+            font-family: 'Great Vibes', cursive;
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 400;
+            letter-spacing: 2px;
+            color: #a58c6d;
+            text-shadow: 0 0 4px rgba(220, 200, 170, 0.6), 0 0 12px rgba(165, 140, 109, 0.4), 0 0 20px rgba(165, 140, 109, 0.2);
+            padding-bottom: 5px;
+        }
+
+        .payment-options { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+
+        .payment-item {
+            background-color: var(--item-bg-color); border-radius: 16px;
+            padding: 12px 16px; display: flex; align-items: center; 
+            gap: 18px;
+            cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInItem 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            opacity: 0; transform: translateX(-30px) scale(0.95);
+            position: relative; overflow: hidden;
+        }
+        
+        .payment-item:nth-child(1) { animation-delay: 0.4s; }
+        .payment-item:nth-child(2) { animation-delay: 0.5s; }
+        .payment-item:nth-child(3) { animation-delay: 0.6s; }
+        .payment-item:nth-child(4) { animation-delay: 0.7s; }
+
+        @keyframes fadeInItem {
+            0% { opacity: 0; transform: translateX(-30px) scale(0.95); }
+            70% { opacity: 1; transform: translateX(5px) scale(1.02); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        .payment-item:hover {
+            background-color: rgba(176, 149, 113, 0.15);
+            border-color: var(--border-color);
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+        .payment-item:active { transform: translateY(-2px) scale(0.98); transition-duration: 0.1s; }
+        
+        .payment-item::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-repeat: no-repeat; pointer-events: none;
+        }
+
+        .payment-item.is-animating::after {
+            background-image: radial-gradient(circle, var(--primary-accent-glow) 0%, transparent 80%);
+            background-position: var(--x) var(--y);
+            animation: glow-click-effect 0.6s ease-out;
+        }
+
+        @keyframes glow-click-effect {
+            from { background-size: 0% 0%; opacity: 1; }
+            to   { background-size: 250% 250%; opacity: 0; }
+        }
+        
+        .logo { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; background-color: white; overflow: hidden; z-index: 1; }
+        .logo.qris { background-color: #f0f0f0; }
+        .logo img, .logo svg { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
+        
+        .account-info { flex-grow: 1; font-size: 1rem; letter-spacing: 2px; font-weight: 500; color: var(--text-color); z-index: 1; }
+        .action-btn { background: none; border: none; cursor: pointer; padding: 0; width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; position: relative; z-index: 1; }
+        .copy-btn svg { width: 24px; height: 24px; position: absolute; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease; }
+        .icon-copy { fill: #a0a0a0; transform: scale(1); opacity: 1; }
+        .payment-item:hover .icon-copy { fill: #fff; }
+        .icon-success, .icon-fail { transform: scale(0); opacity: 0; }
+        .icon-fail { fill: var(--danger-red); }
+        .icon-success { fill: var(--success-color); filter: drop-shadow(0 0 5px var(--success-color)); }
+
+        .copy-btn.copied .icon-copy, .copy-btn.failed .icon-copy { transform: scale(0); opacity: 0; }
+        .copy-btn.copied .icon-success { transform: scale(1); opacity: 1; }
+        .copy-btn.failed .icon-fail { transform: scale(1); opacity: 1; }
+
+        #qris-btn .action-btn svg { width: 24px; height: 24px; fill: #a0a0a0; transition: fill 0.3s ease, transform 0.3s ease; }
+        #qris-btn:hover .action-btn svg { fill: #fff; transform: scale(1.1); }
+        
+        .main-action-btn { background-color: var(--primary-accent); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1rem; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease; box-shadow: 0 4px 20px var(--primary-accent-glow); margin-top: 8px; }
+        .main-action-btn:hover { background-color: var(--primary-accent-hover); }
+        .main-action-btn:active { transform: scale(0.96); box-shadow: 0 2px 10px var(--primary-accent-glow); }
+        
+        .copy-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--notification-bg); color: white; padding: 14px 22px; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.4); z-index: 1000; display: flex; align-items: center; gap: 12px; opacity: 0; transition: bottom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s ease; }
+        .copy-notification.show { bottom: 30px; opacity: 1; }
+        
+        .notification-icon svg { width: 28px; height: 28px; transform: scale(0); opacity: 0; transition: transform 0.4s 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s 0.2s ease; }
+        .copy-notification.show .notification-icon svg { transform: scale(1); opacity: 1; }
+        .notification-text { font-family: 'Share Tech Mono', monospace; text-transform: uppercase; letter-spacing: 1px; font-size: 1rem; line-height: 1.4; font-weight: 400; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center; z-index: 999; opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0.5s ease; }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        
+        .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; position: relative; opacity: 0; transform: translateY(-50vh); transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s ease; }
+        .modal-overlay.show .modal-content { opacity: 1; transform: translateY(0); }
+        .modal-content img { max-width: 250px; display: block; border-radius: 8px; }
+
+        .close-modal { position: absolute; top: -15px; right: -15px; background: white; border: none; font-size: 20px; cursor: pointer; color: #333; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); opacity: 0; transform: scale(0.5) rotate(-90deg); transition: transform 0.4s 0.2s ease, opacity 0.4s 0.2s ease; }
+        .modal-overlay.show .close-modal { opacity: 1; transform: scale(1) rotate(0deg); }
+
+        .music-btn { position: fixed; top: 25px; right: 25px; width: 45px; height: 45px; background-color: var(--card-bg-color); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1001; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .music-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--primary-accent-glow); }
+        .music-btn svg { width: 24px; height: 24px; fill: var(--text-color); }
+        .music-btn .icon-pause { display: none; }
+        .music-btn.playing .icon-play { display: none; }
+        .music-btn.playing .icon-pause { display: block; }
+    </style>
+</head>
+<body>
+    
+    <button id="music-toggle-btn" class="music-btn" aria-label="Play/Pause Music">
+        <svg class="icon-play" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+        <svg class="icon-pause" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+    </button>
+    
+    <div class="payment-card">
+        <div class="card-header"><h1>PaymentMethod</h1></div>
+        <ul class="payment-options">
+            <li class="payment-item" data-copy-text="085814737260"><div class="logo"><img src="https://files.catbox.moe/n3pl02.jpg" alt="DANA Logo"></div><span class="account-info">0877********</span><button class="action-btn copy-btn"><svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path></svg><svg class="icon-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"></path></svg><svg class="icon-fail" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"></path></svg></button></li>
+            <li class="payment-item" data-copy-text="085814737260"><div class="logo"><img src="https://files.catbox.moe/tcwv4j.png" alt="OVO Logo"></div><span class="account-info">0877********</span><button class="action-btn copy-btn"><svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path></svg><svg class="icon-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"></path></svg><svg class="icon-fail" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"></path></svg></button></li>
+            <li class="payment-item" data-copy-text="085814737260"><div class="logo"><img src="https://files.catbox.moe/kb9c9s.png" alt="GoPay Logo"></div><span class="account-info">0877********</span><button class="action-btn copy-btn"><svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path></svg><svg class="icon-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"></path></svg><svg class="icon-fail" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"></path></svg></button></li>
+            <li class="payment-item" id="qris-btn"><div class="logo qris"><img src="https://files.catbox.moe/rm2qo0.png" alt="QRIS Logo"></div><span class="account-info">QRIS</span><button class="action-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm8-12v8h8V3h-8zm6 6h-4V5h4v4zM13 21h8v-8h-8v8zm2-6h4v4h-4v-4z"/></svg></button></li>
+        </ul>
+        <button class="main-action-btn" id="chat-btn">Chat Etmin</button>
+    </div>
+    
+    <div class="modal-overlay" id="qris-modal"><div class="modal-content"><button class="close-modal" id="close-qris-modal">×</button><img src="https://files.catbox.moe/ksb5j2.jpg" alt="QR Code"></div></div>
+
+    <audio id="bg-music" src="https://files.catbox.moe/runnew.mp3" loop></audio>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let notificationTimer;
+        
+        const iconCopySuccess = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+        const iconMusicPlay = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.5 16.5v-9l7 4.5-7 4.5z"/></svg>`;
+        const iconMusicPause = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>`;
+
+        function showNotification(textLines, iconSvg, iconColor) {
+            const oldNotification = document.querySelector('.copy-notification');
+            if (oldNotification) { oldNotification.remove(); clearTimeout(notificationTimer); }
+            
+            const notification = document.createElement('div');
+            notification.className = 'copy-notification';
+            
+            const textHtml = `<div>${textLines.join('</div><div>')}</div>`;
+            notification.innerHTML = `<div class="notification-icon">${iconSvg}</div><div class="notification-text">${textHtml}</div>`;
+            
+            const svgEl = notification.querySelector('.notification-icon svg');
+            svgEl.style.fill = iconColor;
+            svgEl.style.filter = `drop-shadow(0 0 8px ${iconColor})`;
+
+            document.body.appendChild(notification);
+            setTimeout(() => notification.classList.add('show'), 10);
+            
+            notificationTimer = setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 500);
+            }, 2500);
+        }
+
+        const allPaymentItems = document.querySelectorAll('.payment-item');
+        allPaymentItems.forEach(item => {
+            item.addEventListener('click', (event) => {
+                const rect = item.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                item.style.setProperty('--x', `${x}px`);
+                item.style.setProperty('--y', `${y}px`);
+                item.classList.add('is-animating');
+            });
+            item.addEventListener('animationend', () => item.classList.remove('is-animating'));
+        });
+
+        const copyButtons = document.querySelectorAll('.copy-btn');
+        copyButtons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const parentItem = button.closest('.payment-item');
+                const textToCopy = parentItem.dataset.copyText;
+                
+                document.querySelectorAll('.copy-btn').forEach(btn => btn.classList.remove('copied', 'failed'));
+
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showNotification(['Nomor sudah', 'disalin'], iconCopySuccess, 'var(--success-color)');
+                    button.classList.add('copied');
+                    setTimeout(() => button.classList.remove('copied'), 2500);
+                }).catch(err => {
+                    console.error('Gagal menyalin:', err);
+                    alert('Gagal menyalin nomor.');
+                    button.classList.add('failed');
+                    setTimeout(() => button.classList.remove('failed'), 2500);
+                });
+            });
+        });
+
+        const qrisBtn = document.getElementById('qris-btn');
+        const qrisModal = document.getElementById('qris-modal');
+        const closeModalBtn = document.getElementById('close-qris-modal');
+
+        qrisBtn.addEventListener('click', () => qrisModal.classList.add('show'));
+        closeModalBtn.addEventListener('click', () => qrisModal.classList.remove('show'));
+        qrisModal.addEventListener('click', (event) => {
+            if (event.target === qrisModal) qrisModal.classList.remove('show');
+        });
+
+        document.getElementById('chat-btn').addEventListener('click', () => window.open('https://wa.me/6285814737260', '_blank'));
+        
+        const musicBtn = document.getElementById('music-toggle-btn');
+        const audio = document.getElementById('bg-music');
+        
+        musicBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                musicBtn.classList.add('playing');
+                showNotification(['Musik', 'diputar'], iconMusicPlay, 'var(--success-color)');
+            } else {
+                audio.pause();
+                musicBtn.classList.remove('playing');
+                showNotification(['Musik', 'dijeda'], iconMusicPause, 'var(--primary-accent)');
+            }
+        });
+        
+        audio.addEventListener('ended', () => musicBtn.classList.remove('playing'));
+    });
+    </script>
+</body>
+</html>
